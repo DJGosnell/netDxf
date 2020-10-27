@@ -864,7 +864,11 @@ namespace netDxf.IO
                 {
                     case DxfObjectCode.BeginBlock:
                         Block block = this.ReadBlock();
-                        blocks.Add(block.Name, block);
+
+                        // If the block is null, this means the block does not have a name and is unreferenceable.
+                        // Ignore and continue on.
+                        if(block != null) 
+                            blocks.Add(block.Name, block);
                         break;
                     default:
                         this.chunk.Next();
@@ -3095,6 +3099,10 @@ namespace netDxf.IO
                         break;
                 }
             }
+
+            // If the name is null or empty, there is no way to reference this block and thus can be discarded.
+            if (string.IsNullOrEmpty(name))
+                return null;
 
             if (!this.blockRecords.TryGetValue(name, out blockRecord))
                 throw new Exception(string.Format("The block record {0} is not defined.", name));
