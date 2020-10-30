@@ -30,6 +30,7 @@ using netDxf.Blocks;
 using netDxf.Collections;
 using netDxf.Entities;
 using netDxf.Header;
+using netDxf.Logging;
 using netDxf.Objects;
 using netDxf.Tables;
 using netDxf.Units;
@@ -43,9 +44,10 @@ namespace netDxf.IO
     /// <summary>
     /// Low level DXF reader
     /// </summary>
-    internal sealed class DxfReader : IDxfReader
+    internal sealed class DxfReaderConfigured : IDxfReader
     {
         #region private fields
+        private readonly DxfReaderConfigurations configurations;
 
         private bool isBinary;
 
@@ -120,6 +122,11 @@ namespace netDxf.IO
         #endregion
 
         #region constructors
+
+        public DxfReaderConfigured(DxfReaderConfigurations configurations)
+        {
+            this.configurations = configurations;
+        }
 
         #endregion
 
@@ -854,7 +861,11 @@ namespace netDxf.IO
                 {
                     case DxfObjectCode.BeginBlock:
                         Block block = this.ReadBlock();
-                        blocks.Add(block.Name, block);
+
+                        // If the block is null, this means the block does not have a name and is unreferenceable.
+                        // Ignore and continue on.
+                        if (block != null)
+                            blocks.Add(block.Name, block);
                         break;
                     default:
                         this.chunk.Next();
@@ -3153,6 +3164,10 @@ namespace netDxf.IO
                 }
             }
 
+            // If the name is null or empty, there is no way to reference this block and thus can be discarded.
+            if (configurations.DropUnnamedBlocks && string.IsNullOrEmpty(name))
+                return null;
+
             if (!this.blockRecords.TryGetValue(name, out blockRecord))
                 throw new Exception(string.Format("The block record {0} is not defined.", name));
 
@@ -3206,7 +3221,20 @@ namespace netDxf.IO
                     // AutoCAD allows duplicate tags in attribute definitions, but this library does not having duplicate tags is not recommended in any way,
                     // since there will be no way to know which is the definition associated to the insert attribute
                     if (!block.AttributeDefinitions.ContainsTag(attDef.Tag))
-                        block.AttributeDefinitions.Add(attDef);
+                    {
+                        try
+                        {
+                            block.AttributeDefinitions.Add(attDef);
+                        }
+                        catch (Exception e)
+                        {
+                            configurations.Logger?.Warn(e, "Can not add attribute to attribute definitions.");
+
+                            if (!configurations.DropUnreadableAttributes)
+                                throw e;
+                        }
+
+                    }
                 }
                 // block entities for post processing (MLines and Images references other objects (MLineStyle and ImageDefinition) that will be defined later
                 this.blockEntities.Add(block, entities);
@@ -10322,7 +10350,17 @@ namespace netDxf.IO
                     {
                         if (!layout.AssociatedBlock.AttributeDefinitions.ContainsTag(attDef.Tag))
                         {
-                            layout.AssociatedBlock.AttributeDefinitions.Add(attDef);
+                            try
+                            {
+                                layout.AssociatedBlock.AttributeDefinitions.Add(attDef);
+                            }
+                            catch (Exception e)
+                            {
+                                configurations.Logger?.Warn(e, "Can not add attribute to attribute definitions.");
+
+                                if (!configurations.DropUnreadableAttributes)
+                                    throw e;
+                            }
                         }
                     }
 

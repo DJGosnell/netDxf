@@ -846,12 +846,27 @@ namespace netDxf
         /// On Debug mode it will raise any exception that might occur during the whole process.
         /// </remarks>
         public static DxfDocument Load(string file, IEnumerable<string> supportFolders)
+        {
+            return Load(file, supportFolders, new DxfReader());
+        }
+
+        /// <summary>
+        /// Loads a DXF file.
+        /// </summary>
+        /// <param name="file">File name.</param>
+        /// <param name="supportFolders">List of the document support folders.</param>
+        /// <param name="dxfReader">Uses the passed reader for parsing.</param>
+        /// <returns>Returns a DxfDocument. It will return null if the file has not been able to load.</returns>
+        /// <exception cref="DxfVersionNotSupportedException"></exception>
+        /// <remarks>
+        /// Loading DXF files prior to AutoCad 2000 is not supported.<br />
+        /// The Load method will still raise an exception if they are unable to create the FileStream.<br />
+        /// On Debug mode it will raise any exception that might occur during the whole process.
+        /// </remarks>
+        public static DxfDocument Load(string file, IEnumerable<string> supportFolders, IDxfReader dxfReader)
         {            
 
             Stream stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-            DxfReader dxfReader = new DxfReader();
-
 #if DEBUG
             DxfDocument document = dxfReader.Read(stream, supportFolders);
             stream.Close();
@@ -909,8 +924,25 @@ namespace netDxf
         /// </remarks>
         public static DxfDocument Load(Stream stream, IEnumerable<string> supportFolders)
         {
-            DxfReader dxfReader = new DxfReader();
+            return Load(stream, supportFolders, new DxfReader());
+        }
 
+        
+        /// <summary>
+        /// Loads a DXF file.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="supportFolders">List of the document support folders.</param>
+        /// <param name="dxfReader">Uses the passed reader for parsing.</param>
+        /// <returns>Returns a DxfDocument. It will return null if the file has not been able to load.</returns>
+        /// <exception cref="DxfVersionNotSupportedException"></exception>
+        /// <remarks>
+        /// Loading DXF files prior to AutoCad 2000 is not supported.<br />
+        /// On Debug mode it will raise any exception that might occur during the whole process.<br />
+        /// The caller will be responsible of closing the stream.
+        /// </remarks>
+        public static DxfDocument Load(Stream stream, IEnumerable<string> supportFolders, IDxfReader dxfReader)
+        {
 #if DEBUG
             DxfDocument document = dxfReader.Read(stream, supportFolders);
 #else
