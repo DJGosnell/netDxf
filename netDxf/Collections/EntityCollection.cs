@@ -31,7 +31,7 @@ namespace netDxf.Collections
     /// Represent a collection of <see cref="EntityObject">entities</see> that fire events when it is modified. 
     /// </summary>
     public class EntityCollection :
-        IList<EntityObject>
+        IList<EntityObject>, IReadOnlyList<EntityObject>
     {
         #region delegates and events
 

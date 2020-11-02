@@ -44,7 +44,7 @@ namespace netDxf.IO
     /// <summary>
     /// Low level DXF reader
     /// </summary>
-    internal sealed class DxfReaderConfigured : IDxfReader
+    public sealed class DxfReaderConfigured : IDxfReader
     {
         #region private fields
         private readonly DxfReaderConfigurations configurations;
